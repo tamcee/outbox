@@ -21,9 +21,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const refreshUser = useCallback(async () => {
     try {
+      // Check if URL contains token from OAuth callback redirect
+      if (typeof window !== 'undefined' && window.location.search) {
+        const params = new URLSearchParams(window.location.search);
+        const urlToken = params.get('token');
+        if (urlToken) {
+          localStorage.setItem('auth_token', urlToken);
+          params.delete('token');
+          const remainingQuery = params.toString() ? `?${params.toString()}` : '';
+          window.history.replaceState({}, '', `${window.location.pathname}${remainingQuery}`);
+        }
+      }
+
       const me = await authApi.getMe();
       setUser(me);
     } catch {
+      localStorage.removeItem('auth_token');
       setUser(null);
     } finally {
       setLoading(false);
@@ -47,6 +60,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setLoading(true);
       const res = await authApi.devLogin(email, name);
+      if (res.token) {
+        localStorage.setItem('auth_token', res.token);
+      }
       setUser(res.user);
       success(`Welcome back, ${res.user.name || res.user.email}!`);
     } catch (err: any) {
@@ -59,10 +75,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const logout = async () => {
     try {
       await authApi.logout();
+    } finally {
+      localStorage.removeItem('auth_token');
       setUser(null);
       success('Logged out successfully');
-    } catch (err: any) {
-      error('Failed to logout');
     }
   };
 

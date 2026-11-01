@@ -12,8 +12,9 @@ export const LoginPage: React.FC = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const err = params.get('error');
+    const details = params.get('details');
     if (err === 'auth_failed') {
-      error('Google authentication failed. Please check credentials and try again.');
+      error(details ? `Google authentication failed: ${details}` : 'Google authentication failed. Please check credentials and try again.');
       window.history.replaceState({}, '', window.location.pathname);
     } else if (err === 'no_code') {
       error('Google login was cancelled or timed out.');

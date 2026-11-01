@@ -38,7 +38,10 @@ export const authController = {
     }
 
     try {
-      const { tokens } = await googleClient.getToken(code);
+      const { tokens } = await googleClient.getToken({
+        code,
+        redirect_uri: env.GOOGLE_CALLBACK_URL,
+      });
       googleClient.setCredentials(tokens);
 
       let email = '';
@@ -97,10 +100,11 @@ export const authController = {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
 
-      res.redirect(`${env.FRONTEND_URL}/`);
+      res.redirect(`${env.FRONTEND_URL}/?token=${token}`);
     } catch (err: any) {
-      logger.error('Google OAuth callback error:', err.message);
-      res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed`);
+      const errMsg = err?.response?.data?.error_description || err?.message || String(err);
+      logger.error('Google OAuth callback error:', errMsg);
+      res.redirect(`${env.FRONTEND_URL}/login?error=auth_failed&details=${encodeURIComponent(errMsg)}`);
     }
   },
 
