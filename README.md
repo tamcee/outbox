@@ -114,6 +114,7 @@ The system matches the Figma design pixel-for-pixel and enforces strict guarante
 | `NODE_ENV` | `development` | App environment (`development` / `production`) |
 | `FRONTEND_URL` | `http://localhost:5173` | Allowed CORS origin for frontend |
 | `DATABASE_URL` | `postgresql://postgres:postgres@localhost:5432/emailscheduler?schema=public` | PostgreSQL connection string |
+| `REDIS_URL` | `""` | Optional direct Redis URL (e.g. Render Redis) |
 | `REDIS_HOST` | `localhost` | Redis host |
 | `REDIS_PORT` | `6379` | Redis port |
 | `REDIS_PASSWORD` | `""` | Redis auth password (optional) |
@@ -182,6 +183,7 @@ Open your browser at `http://localhost:5173`.
 - **Live Bull Board Queue Dashboard**: `http://localhost:5001/admin/queues`
   - Username: `admin`
   - Password: `adminsecret` (configured in `.env`)
+  - Or click **"Queue Dashboard"** from the user dropdown in the app (auto-authenticated via session cookie).
 - **Backend Health Check**: `http://localhost:5001/health`
 
 ### Running the 1,000+ Email Load Test
@@ -221,3 +223,12 @@ The UI faithfully implements all Figma layouts and screens:
    - Rich text formatting toolbar (Bold, Italic, Lists, Blockquote, Code block, Align).
    - `Send Later` popover with custom date/time picker and quick presets (`Tomorrow`, `10:00 AM`, etc.).
 
+---
+
+## Deploying on Render
+
+A `render.yaml` Blueprint is provided at the root:
+1. Push this repository to your GitHub account (`https://github.com/tamcee/outbox`).
+2. Go to [Render Dashboard](https://dashboard.render.com/) $\rightarrow$ **New +** $\rightarrow$ **Blueprint**.
+3. Select your repository. Render automatically provisions PostgreSQL, Redis, Backend Web Service, and Frontend Static Site with zero manual configuration.
+4. Detailed step-by-step instructions are available in [`RENDER_DEPLOY_GUIDE.md`](./RENDER_DEPLOY_GUIDE.md).
