@@ -44,37 +44,53 @@ function parseRedisUrl(input?: string): Partial<RedisOptions> | null {
 }
 
 function getRedisConfig(): RedisOptions {
+  let host = env.REDIS_HOST;
+  let port = env.REDIS_PORT;
+  let username: string | undefined = undefined;
+  let password: string | undefined = env.REDIS_PASSWORD || undefined;
+  let tls: any = undefined;
+
   if (env.REDIS_URL) {
     try {
       const parsed = parseRedisUrl(env.REDIS_URL);
       if (parsed && parsed.host) {
-        logger.info(`Parsed REDIS_URL -> target: ${parsed.host}:${parsed.port} (TLS: ${Boolean(parsed.tls)})`);
-        return {
-          host: parsed.host,
-          port: parsed.port,
-          username: parsed.username,
-          password: parsed.password,
-          tls: parsed.tls,
-          maxRetriesPerRequest: null,
-          enableReadyCheck: false,
-          retryStrategy(times) {
-            return Math.min(times * 300, 5000);
-          },
-        };
+        host = parsed.host;
+        port = parsed.port || port;
+        username = parsed.username;
+        password = parsed.password || password;
+        tls = parsed.tls;
       }
     } catch (e: any) {
       logger.warn('Failed to parse REDIS_URL, falling back to REDIS_HOST/PORT:', e?.message || e);
     }
   }
 
-  if (env.NODE_ENV === 'production' && env.REDIS_HOST === 'localhost') {
-    logger.warn('⚠️ Redis is configured to connect to localhost in production. Please set REDIS_URL in your deployment environment variables (e.g. Upstash, Redis Cloud, or Render Redis).');
+  // Handle case where user provided password without username: e.g. redis://PASSWORD@host:port
+  if (username && !password) {
+    password = username;
+    username = 'default';
   }
 
+  // In Redis 6+ / Redis Cloud, the default ACL user is 'default'
+  if (password && !username) {
+    username = 'default';
+  }
+
+  if (env.NODE_ENV === 'production' && host === 'localhost') {
+    logger.warn('⚠️ Redis is configured to connect to localhost in production. Please set REDIS_URL in your deployment environment variables.');
+  }
+
+  const maskedPassword = password
+    ? `${password.slice(0, 3)}...${password.slice(-3)} (len ${password.length})`
+    : '(none)';
+  logger.info(`Redis config -> host: ${host}:${port}, username: ${username || '(none)'}, password: ${maskedPassword}, tls: ${Boolean(tls)}`);
+
   return {
-    host: env.REDIS_HOST,
-    port: env.REDIS_PORT,
-    password: env.REDIS_PASSWORD || undefined,
+    host,
+    port,
+    username,
+    password,
+    tls,
     maxRetriesPerRequest: null,
     enableReadyCheck: false,
     retryStrategy(times) {
@@ -93,5 +109,11 @@ redisClient.on('connect', () => {
 
 redisClient.on('error', (err: any) => {
   const errMsg = err?.message || err?.code || String(err);
-  logger.error(`Redis connection error (${redisConnectionOptions.host}:${redisConnectionOptions.port}):`, errMsg);
+  if (errMsg.includes('WRONGPASS')) {
+    logger.error(
+      `Redis connection error (${redisConnectionOptions.host}:${redisConnectionOptions.port}): WRONGPASS invalid username-password pair. Check the database password in your Redis Cloud / Upstash dashboard.`
+    );
+  } else {
+    logger.error(`Redis connection error (${redisConnectionOptions.host}:${redisConnectionOptions.port}):`, errMsg);
+  }
 });
