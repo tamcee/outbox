@@ -1,0 +1,14 @@
+{
+  "name": "email-scheduler-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "load-test": "cd backend && npm run load-test",
+    "prisma:studio": "cd backend && npm run prisma:studio"
+  }
+}
+

@@ -1,0 +1,81 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum EmailStatus {
+  SCHEDULED
+  PROCESSING
+  SENT
+  FAILED
+}
+
+model User {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  name            String?
+  avatar          String?
+  googleId        String?        @unique
+  slackWebhookUrl String?
+  slackChannel    String?
+  slackTeamName   String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  emails          Email[]
+  campaigns       Campaign[]
+}
+
+model SenderAccount {
+  id              String         @id @default(uuid())
+  email           String         @unique
+  host            String
+  port            Int
+  user            String
+  pass            String
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  emails          Email[]
+}
+
+model Campaign {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject         String
+  body            String
+  totalLeads      Int
+  delayBetweenSec Int            @default(2)
+  hourlyLimit     Int?
+  startTime       DateTime
+  createdAt       DateTime       @default(now())
+  emails          Email[]
+}
+
+model Email {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campaignId      String?
+  campaign        Campaign?      @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  senderId        String?
+  sender          SenderAccount? @relation(fields: [senderId], references: [id], onDelete: SetNull)
+  recipient       String
+  subject         String
+  body            String
+  status          EmailStatus    @default(SCHEDULED)
+  scheduledAt     DateTime
+  sentAt          DateTime?
+  previewUrl      String?
+  errorMessage    String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  @@index([userId, status])
+  @@index([scheduledAt])
+  @@index([status, scheduledAt])
+}
+
