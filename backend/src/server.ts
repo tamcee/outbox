@@ -26,7 +26,13 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (mobile apps, curl) or matching allowed origins
-      if (!origin || origin === env.FRONTEND_URL || origin.endsWith('.onrender.com') || origin.includes('localhost')) {
+      if (
+        !origin ||
+        origin === env.FRONTEND_URL ||
+        origin.endsWith('.vercel.app') ||
+        origin.endsWith('.onrender.com') ||
+        origin.includes('localhost')
+      ) {
         callback(null, true);
       } else {
         callback(null, true); // Permissive for production deployment
