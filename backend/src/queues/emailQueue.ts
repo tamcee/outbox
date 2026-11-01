@@ -1,5 +1,6 @@
 import { Queue } from 'bullmq';
 import { redisConnectionOptions } from '../config/redis.js';
+import { logger } from '../utils/logger.js';
 
 export const EMAIL_QUEUE_NAME = 'email-dispatch-queue';
 
@@ -25,4 +26,9 @@ export const emailQueue = new Queue<EmailJobData>(EMAIL_QUEUE_NAME, {
     removeOnFail: false,
   },
 });
+
+emailQueue.on('error', (err: any) => {
+  logger.error('BullMQ EmailQueue error:', err?.message || err);
+});
+
 

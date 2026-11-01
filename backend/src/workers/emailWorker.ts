@@ -173,6 +173,10 @@ export function startEmailWorker(): Worker<EmailJobData> {
     }
   );
 
+  worker.on('error', (err: any) => {
+    logger.error('BullMQ EmailWorker Redis/Queue error:', err?.message || err);
+  });
+
   worker.on('failed', (job, err) => {
     // If it's a DelayedError, it is expected when job is moved to delayed
     if (err.name === 'DelayedError') {
